@@ -13,6 +13,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--input', nargs='+', help='input help')
 	parser.add_argument('--output', nargs='?', help='output help')
+	
 	args = parser.parse_args()
 
 	print(args.output);
