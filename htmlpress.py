@@ -7,6 +7,26 @@ __author__ = "Igor Terletskiy"
 __version__ = "0.0.1"
 __license__ = "MIT"
 
+def optimiseHtmlHeadPart(headcontent):
+	
+
+def optimiseHtmlBodyPart(bodypart):
+	
+
+def simplifyDict(rawDict):
+	
+
+
+def optimiseHtmlsDict(htmlsdict):
+	result = dict()
+	for item in htmlsdict:
+		htmldict = htmlsdict[item]
+		result[item] = optimiseHtmlDict(htmldict)
+	return simplifyDict(result)
+
+def optimiseHtmlDict(htmldict):
+
+
 def parseHTMLHeadPart(content):
 	start = content.find('<head>') + len('<head>')
 	end = content.rfind('</head>') + len('</head>')
@@ -35,6 +55,7 @@ def log(jsonData):
 	file.write(json.dumps(jsonData))
 	file.truncate()
 	file.close()
+	return jsonData
 
 def readFile(filepath):
 	file = open(filepath, 'r')
@@ -48,7 +69,8 @@ def readFiles(filepaths):
 
 def makeHTMLParsing(htmlFilepaths):
 	htmlsDict = readFiles(htmlFilepaths)
-	preparedHtmlDict = prepareHTMLsDict(htmlsDict)
+	preparedHtmlsDict = prepareHTMLsDict(htmlsDict)
+	optimisedHtmlsDict = optimiseHtmlsDict(preparedHtmlsDict)
 	# log(htmlsDict)
 
 def getArgsData():
