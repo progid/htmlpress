@@ -7,16 +7,62 @@ __author__ = "Igor Terletskiy"
 __version__ = "0.0.1"
 __license__ = "MIT"
 
+def parseHTMLHeadPart(content):
+	start = content.find('<head>') + len('<head>')
+	end = content.rfind('</head>') + len('</head>')
+	return content[start:end]
 
+def parseHTMLBodyPart(content):
+	start = content.find('<body>') + len('<body>')
+	end = content.rfind('</body>') + len('</body>')
+	return content[start:end]
 
-def main():
+def parseHTML(content):
+	head = parseHTMLHeadPart(content)
+	body = parseHTMLBodyPart(content)
+	return { 'head': head, 'body': body }
+
+def prepareHTMLsDict(htmlsDict):
+	result = dict()
+	for item in htmlsDict:
+		htmlcontent = htmlmin.minify(htmlsDict[item])
+		result[item] = parseHTML(htmlcontent)
+	return result
+
+def log(jsonData):
+	file = open('log.txt', 'w+')
+	file.seek(0)
+	file.write(json.dumps(jsonData))
+	file.truncate()
+	file.close()
+
+def readFile(filepath):
+	file = open(filepath, 'r')
+	return file.read()
+
+def readFiles(filepaths):
+	result = dict()
+	for filepath in filepaths:
+		result[filepath] = readFile(filepath)
+	return result
+
+def makeHTMLParsing(htmlFilepaths):
+	htmlsDict = readFiles(htmlFilepaths)
+	preparedHtmlDict = prepareHTMLsDict(htmlsDict)
+	# log(htmlsDict)
+
+def getArgsData():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--input', nargs='+', help='input help')
-	parser.add_argument('--output', nargs='?', help='output help')
+	parser.add_argument('--singlefile', action='store_true', help='singlefile help')
+	parser.add_argument('--multifiles', action='store_true', help='multifiles help')
 	
-	args = parser.parse_args()
+	return parser.parse_args()
 
-	print(args.output);
+def main():
+	args = getArgsData()
+	preparedData = makeHTMLParsing(args.input)
+	print(args);
 
 if __name__ == "__main__":
 	main()
