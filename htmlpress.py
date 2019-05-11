@@ -20,15 +20,31 @@ def optimiseHtmlHeadPart(headpart):
 	links = re.findall(searchLinkTag, headpart)
 	preparedHeadpart = re.sub(searchLinkTag, '', headpart)
 	startStyleTags = re.finditer(searchOpenedTag, preparedHeadpart)
-	result = links
+	resultStyles = links
 	for match in startStyleTags:
 		startPos, endPos = match.span()
 		styleTag = preparedHeadpart[startPos:startPos + preparedHeadpart[startPos:].find(endTag) + len(endTag)]
-		result.append(styleTag)
-	for index, item in enumerate(result):
+		resultStyles.append(styleTag)
+	for index, item in enumerate(resultStyles):
 		preparedHeadpart = preparedHeadpart.replace(item, '')
-		result[index] = cssmin.cssmin(item[len(startTag):-len(endTag)])
-	return { 'content': preparedHeadpart, 'styles': result }
+		resultStyles[index] = cssmin.cssmin(item)
+
+	startTag = '<script>'
+	endTag = '</script>'
+	searchOpenedTag = startTag[:-1] + r'[^>]*>'
+	searchClosedTag = searchOpenedTag + r'[^>]*>' + endTag
+	connectScriptTags = re.findall(searchClosedTag, preparedHeadpart)
+	preparedHeadpart = re.sub(searchClosedTag, '', preparedHeadpart)
+	startScriptTags = re.finditer(searchOpenedTag, preparedHeadpart)
+	resultScripts = connectScriptTags
+	for match in startScriptTags:
+		startPos, endPos = match.span()
+		scriptTag = preparedHeadpart[startPos:startPos + preparedHeadpart[startPos:].find(endTag) + len(endTag)]
+		resultScripts.append(scriptTag)
+	for index, item in enumerate(resultScripts):
+		preparedHeadpart = preparedHeadpart.replace(item, '')
+		resultScripts[index] = jsmin.jsmin(item)
+	return { 'content': preparedHeadpart, 'styles': resultStyles, 'scripts': resultScripts }
 	
 def optimiseHtmlBodyPart(bodypart):
 	startTag = '<script>'
@@ -38,15 +54,15 @@ def optimiseHtmlBodyPart(bodypart):
 	connectScriptTags = re.findall(searchClosedTag, bodypart)
 	preparedBodypart = re.sub(searchClosedTag, '', bodypart)
 	startScriptTags = re.finditer(searchOpenedTag, preparedBodypart)
-	result = connectScriptTags
+	resultScripts = connectScriptTags
 	for match in startScriptTags:
 		startPos, endPos = match.span()
 		scriptTag = preparedBodypart[startPos:startPos + preparedBodypart[startPos:].find(endTag) + len(endTag)]
-		result.append(scriptTag)
-	for index, item in enumerate(result):
+		resultScripts.append(scriptTag)
+	for index, item in enumerate(resultScripts):
 		preparedBodypart = preparedBodypart.replace(item, '')
-		result[index] = jsmin.jsmin(item[len(startTag):-len(endTag)])
-	return { 'content': preparedBodypart, 'scripts': result }
+		resultScripts[index] = jsmin.jsmin(item)
+	return { 'content': preparedBodypart, 'scripts': resultScripts }
 
 
 def optimiseHtmlDict(htmldict):
@@ -96,10 +112,7 @@ def readFile(filepath):
 	return file.read()
 
 def readFiles(filepaths):
-	result = dict()
-	for filepath in filepaths:
-		result[filepath] = readFile(filepath)
-	return result
+	return { filepath: readFile(filepath) for filepath in filepaths }
 
 def makeHTMLParsing(htmlFilepaths):
 	htmlsDict = readFiles(htmlFilepaths)
