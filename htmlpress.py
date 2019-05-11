@@ -10,6 +10,23 @@ __license__ = "MIT"
 def simplifyDict(rawDict):
 	log(rawDict)
 
+def getAttrsFromTag(tagcontent):
+	startTag = tagcontent[:tagcontent.find('>') + 1]
+	endTag = tagcontent[tagcontent.rfind('</')+2:]
+	tagContent = tagcontent[len(startTag):-len(endTag)] if endTag else ''
+	tagName = startTag[1:startTag.find(' ')]
+	tagAttrsArr = startTag[startTag.find(' ') + 1:].split(' ')
+	tatAttrsKeyValueArr = [{ attrs[:attrs.find('=')]: attrs[attrs.find('=')+2:] } for attrs in tagAttrsArr]
+	return {
+		'tag': tagName,
+		'attrs': tatAttrsKeyValueArr,
+		'content': tagContent
+	}
+
+def getAttrsFromTags(tagslist):
+	return [getAttrsFromTag(tag) for tag in tagslist]
+
+
 def optimiseHtmlHeadPart(headpart):
 	linkTag = '<link>'
 	startTag = r'<style>'
@@ -44,7 +61,7 @@ def optimiseHtmlHeadPart(headpart):
 	for index, item in enumerate(resultScripts):
 		preparedHeadpart = preparedHeadpart.replace(item, '')
 		resultScripts[index] = jsmin.jsmin(item)
-	return { 'content': preparedHeadpart, 'styles': resultStyles, 'scripts': resultScripts }
+	return { 'content': preparedHeadpart, 'styles': getAttrsFromTags(resultStyles), 'scripts': getAttrsFromTags(resultScripts) }
 	
 def optimiseHtmlBodyPart(bodypart):
 	startTag = '<script>'
@@ -62,7 +79,7 @@ def optimiseHtmlBodyPart(bodypart):
 	for index, item in enumerate(resultScripts):
 		preparedBodypart = preparedBodypart.replace(item, '')
 		resultScripts[index] = jsmin.jsmin(item)
-	return { 'content': preparedBodypart, 'scripts': resultScripts }
+	return { 'content': preparedBodypart, 'scripts': getAttrsFromTags(resultScripts) }
 
 
 def optimiseHtmlDict(htmldict):
