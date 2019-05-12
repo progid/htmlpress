@@ -4,7 +4,7 @@ import re, sys, os, json, copy, zlib, string, random, math, shutil, htmlmin, css
 
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 __license__ = "MIT"
 
 def simplifyDict(rawDict):
@@ -12,14 +12,15 @@ def simplifyDict(rawDict):
 
 def getAttrsFromTag(tagcontent):
 	startTag = tagcontent[:tagcontent.find('>') + 1]
-	endTag = tagcontent[tagcontent.rfind('</')+2:]
+	endTag = tagcontent[tagcontent.rfind('</'):]
 	tagContent = tagcontent[len(startTag):-len(endTag)] if endTag else ''
 	tagName = startTag[1:startTag.find(' ')]
-	tagAttrsArr = startTag[startTag.find(' ') + 1:].split(' ')
-	tatAttrsKeyValueArr = [{ attrs[:attrs.find('=')]: attrs[attrs.find('=')+2:] } for attrs in tagAttrsArr]
+	tagAttrsArr = startTag[startTag.find(' ') + 1:-1].split(' ') if startTag.find(' ') != -1 else []
+	print(tagAttrsArr)
+	tagAttrsKeyValueArr = [{ attrs[:attrs.find('=')]: attrs[attrs.find('=')+1:] } for attrs in tagAttrsArr]
 	return {
 		'tag': tagName,
-		'attrs': tatAttrsKeyValueArr,
+		'attrs': tagAttrsKeyValueArr,
 		'content': tagContent
 	}
 
