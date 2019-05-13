@@ -3,16 +3,13 @@
 import re, sys, os, json, copy, zlib, string, random, math, shutil, htmlmin, cssmin, jsmin, argparse
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.1.2"
+__version__ = "0.1.4"
 __license__ = "MIT"
 
 compressors = {
 	'style': cssmin.cssmin,
 	'script': jsmin.jsmin
 }
-
-def simplifyDict(rawDict):
-	log(rawDict)
 
 def getAttrsFromTag(tagcontent):
 	startTag = tagcontent[:tagcontent.find('>') + 1]
@@ -75,9 +72,6 @@ def optimiseHtmlDict(htmldict):
 	body = optimiseHtmlPartOf(htmldict['body'])
 	return { 'head': head, 'body': body }
 
-def optimiseHtmlsDict(htmlsdict):
-	return simplifyDict({item: optimiseHtmlDict(htmlsdict[item]) for item in htmlsdict})
-
 def parseHTMLSection(content, section):
 	start = content.find('<' + section + '>') + len(section) + 2
 	end = content.rfind('</' + section + '>')
@@ -89,10 +83,13 @@ def parseHTML(content):
 	return { 'head': head, 'body': body }
 
 def prepareHTMLsDict(htmlsDict):
-	return { item: parseHTML(htmlmin.minify(htmlsDict[item])) for item in htmlsDict }
+	return { item: parseHTML(htmlmin.minify(htmlsDict[item], remove_comments=True, remove_empty_space=True)) for item in htmlsDict }
 
-def log(jsonData):
-	file = open('log.txt', 'w+')
+def optimiseHtmlsDict(htmlsdict):
+	return {item: optimiseHtmlDict(htmlsdict[item]) for item in htmlsdict}
+
+def saveTo(jsonData, filename='out.txt'):
+	file = open(filename, 'w+')
 	file.seek(0)
 	file.write(json.dumps(jsonData))
 	file.truncate()
@@ -109,6 +106,15 @@ def makeHTMLParsing(htmlFilepaths):
 	htmlsDict = readFiles(htmlFilepaths)
 	preparedHtmlsDict = prepareHTMLsDict(htmlsDict)
 	optimisedHtmlsDict = optimiseHtmlsDict(preparedHtmlsDict)
+	return optimisedHtmlsDict
+
+def saveData(data, singlefile):
+	if singlefile:
+		return saveTo(data, singlefile)
+	for item in data:
+		filename = item[item.rfind('/') + 1:item.rfind('.') + 1] + 'json'
+		saveTo(data[item], filename)
+	return data
 
 def getArgsData():
 	parser = argparse.ArgumentParser()
@@ -119,6 +125,7 @@ def getArgsData():
 def main():
 	args = getArgsData()
 	preparedData = makeHTMLParsing(args.input)
+	saveData(preparedData, args.singlefile)
 
 if __name__ == "__main__":
 	main()
