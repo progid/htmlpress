@@ -7,8 +7,8 @@ __version__ = "0.1.2"
 __license__ = "MIT"
 
 compressors = {
-	'styles': cssmin.cssmin,
-	'scripts': jsmin.jsmin
+	'style': cssmin.cssmin,
+	'script': jsmin.jsmin
 }
 
 def simplifyDict(rawDict):
@@ -21,11 +21,14 @@ def getAttrsFromTag(tagcontent):
 	tagName = startTag[1:startTag.find(' ')]
 	tagAttrsArr = startTag[startTag.find(' ') + 1:-1].split(' ') if startTag.find(' ') != -1 else []
 	tagAttrsKeyValueArr = [{ attrs[:attrs.find('=')]: attrs[attrs.find('=')+1:] } for attrs in tagAttrsArr]
-	return {
-		'tag': tagName,
-		'attrs': tagAttrsKeyValueArr,
-		'content': tagContent
+	result = {
+		'tag': tagName
 	}
+	if tagAttrsKeyValueArr:
+		result['attrs'] = tagAttrsKeyValueArr
+	if tagContent:
+		result['content'] = compressors[tagName](tagContent)
+	return result
 
 def getAttrsFromTags(tagslist):
 	return [getAttrsFromTag(tag) for tag in tagslist]
