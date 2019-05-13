@@ -2,10 +2,14 @@
 
 import re, sys, os, json, copy, zlib, string, random, math, shutil, htmlmin, cssmin, jsmin, argparse
 
-
 __author__ = "Igor Terletskiy"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __license__ = "MIT"
+
+compressors = {
+	'styles': cssmin.cssmin,
+	'scripts': jsmin.jsmin
+}
 
 def simplifyDict(rawDict):
 	log(rawDict)
@@ -69,33 +73,20 @@ def optimiseHtmlDict(htmldict):
 	return { 'head': head, 'body': body }
 
 def optimiseHtmlsDict(htmlsdict):
-	result = dict()
-	for item in htmlsdict:
-		htmldict = htmlsdict[item]
-		result[item] = optimiseHtmlDict(htmldict)
-	return simplifyDict(result)
+	return simplifyDict({item: optimiseHtmlDict(htmlsdict[item]) for item in htmlsdict})
 
-def parseHTMLHeadPart(content):
-	start = content.find('<head>') + len('<head>')
-	end = content.rfind('</head>')
-	return content[start:end]
-
-def parseHTMLBodyPart(content):
-	start = content.find('<body>') + len('<body>')
-	end = content.rfind('</body>')
+def parseHTMLSection(content, section):
+	start = content.find('<' + section + '>') + len(section) + 2
+	end = content.rfind('</' + section + '>')
 	return content[start:end]
 
 def parseHTML(content):
-	head = parseHTMLHeadPart(content)
-	body = parseHTMLBodyPart(content)
+	head = parseHTMLSection(content, 'head')
+	body = parseHTMLSection(content, 'body')
 	return { 'head': head, 'body': body }
 
 def prepareHTMLsDict(htmlsDict):
-	result = dict()
-	for item in htmlsDict:
-		htmlcontent = htmlmin.minify(htmlsDict[item])
-		result[item] = parseHTML(htmlcontent)
-	return result
+	return { item: parseHTML(htmlmin.minify(htmlsDict[item])) for item in htmlsDict }
 
 def log(jsonData):
 	file = open('log.txt', 'w+')
@@ -106,8 +97,7 @@ def log(jsonData):
 	return jsonData
 
 def readFile(filepath):
-	file = open(filepath, 'r')
-	return file.read()
+	return open(filepath, 'r').read()
 
 def readFiles(filepaths):
 	return { filepath: readFile(filepath) for filepath in filepaths }
@@ -116,13 +106,11 @@ def makeHTMLParsing(htmlFilepaths):
 	htmlsDict = readFiles(htmlFilepaths)
 	preparedHtmlsDict = prepareHTMLsDict(htmlsDict)
 	optimisedHtmlsDict = optimiseHtmlsDict(preparedHtmlsDict)
-	# log(htmlsDict)
 
 def getArgsData():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--input', nargs='+', help='input help')
 	parser.add_argument('--singlefile', nargs='?', help='singlefile help')
-	
 	return parser.parse_args()
 
 def main():
