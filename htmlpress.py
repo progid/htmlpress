@@ -4,7 +4,7 @@ import re, sys, os, json, copy, zlib, string, random, math, shutil, htmlmin, css
 
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __license__ = "MIT"
 
 def simplifyDict(rawDict):
@@ -16,7 +16,6 @@ def getAttrsFromTag(tagcontent):
 	tagContent = tagcontent[len(startTag):-len(endTag)] if endTag else ''
 	tagName = startTag[1:startTag.find(' ')]
 	tagAttrsArr = startTag[startTag.find(' ') + 1:-1].split(' ') if startTag.find(' ') != -1 else []
-	print(tagAttrsArr)
 	tagAttrsKeyValueArr = [{ attrs[:attrs.find('=')]: attrs[attrs.find('=')+1:] } for attrs in tagAttrsArr]
 	return {
 		'tag': tagName,
@@ -27,65 +26,46 @@ def getAttrsFromTag(tagcontent):
 def getAttrsFromTags(tagslist):
 	return [getAttrsFromTag(tag) for tag in tagslist]
 
+def findSimpleTagsWithName(tagName, context, closedTag=False):
+	searchTag = r'<' + tagName + r'[^>]*>' + (r'</' + tagName + r'>' if closedTag else '')
+	return re.findall(searchTag, context)
 
-def optimiseHtmlHeadPart(headpart):
-	linkTag = '<link>'
-	startTag = r'<style>'
-	endTag = r'</style>'
-	searchOpenedTag = startTag[:-1] + r'[^>]*>'
-	searchClosedTag = searchOpenedTag + r'[^>]*>' + endTag
-	searchLinkTag = linkTag[:-1] + r'[^>]*>'
-	links = re.findall(searchLinkTag, headpart)
-	preparedHeadpart = re.sub(searchLinkTag, '', headpart)
-	startStyleTags = re.finditer(searchOpenedTag, preparedHeadpart)
-	resultStyles = links
-	for match in startStyleTags:
-		startPos, endPos = match.span()
-		styleTag = preparedHeadpart[startPos:startPos + preparedHeadpart[startPos:].find(endTag) + len(endTag)]
-		resultStyles.append(styleTag)
-	for index, item in enumerate(resultStyles):
-		preparedHeadpart = preparedHeadpart.replace(item, '')
-		resultStyles[index] = cssmin.cssmin(item)
+def removeSimpleTagsWithName(tagName, context, closedTag=False):
+	searchTag = r'<' + tagName + r'[^>]*>' + (r'</' + tagName + r'>' if closedTag else '')
+	return re.sub(searchTag, '', context)
 
-	startTag = '<script>'
-	endTag = '</script>'
-	searchOpenedTag = startTag[:-1] + r'[^>]*>'
-	searchClosedTag = searchOpenedTag + r'[^>]*>' + endTag
-	connectScriptTags = re.findall(searchClosedTag, preparedHeadpart)
-	preparedHeadpart = re.sub(searchClosedTag, '', preparedHeadpart)
-	startScriptTags = re.finditer(searchOpenedTag, preparedHeadpart)
-	resultScripts = connectScriptTags
-	for match in startScriptTags:
+def findCompositeTagsWithName(tagName, context):
+	result = []
+	searchOpenedTag = r'<' + tagName + r'[^>]*>'
+	searchClosedTag = r'</' + tagName + r'>'
+	findedStartTags = re.finditer(searchOpenedTag, context)
+	for match in findedStartTags:
 		startPos, endPos = match.span()
-		scriptTag = preparedHeadpart[startPos:startPos + preparedHeadpart[startPos:].find(endTag) + len(endTag)]
-		resultScripts.append(scriptTag)
-	for index, item in enumerate(resultScripts):
-		preparedHeadpart = preparedHeadpart.replace(item, '')
-		resultScripts[index] = jsmin.jsmin(item)
-	return { 'content': preparedHeadpart, 'styles': getAttrsFromTags(resultStyles), 'scripts': getAttrsFromTags(resultScripts) }
-	
-def optimiseHtmlBodyPart(bodypart):
-	startTag = '<script>'
-	endTag = '</script>'
-	searchOpenedTag = startTag[:-1] + r'[^>]*>'
-	searchClosedTag = searchOpenedTag + r'[^>]*>' + endTag
-	connectScriptTags = re.findall(searchClosedTag, bodypart)
-	preparedBodypart = re.sub(searchClosedTag, '', bodypart)
-	startScriptTags = re.finditer(searchOpenedTag, preparedBodypart)
-	resultScripts = connectScriptTags
-	for match in startScriptTags:
-		startPos, endPos = match.span()
-		scriptTag = preparedBodypart[startPos:startPos + preparedBodypart[startPos:].find(endTag) + len(endTag)]
-		resultScripts.append(scriptTag)
-	for index, item in enumerate(resultScripts):
-		preparedBodypart = preparedBodypart.replace(item, '')
-		resultScripts[index] = jsmin.jsmin(item)
-	return { 'content': preparedBodypart, 'scripts': getAttrsFromTags(resultScripts) }
+		findedTag = context[startPos:endPos + context[endPos:].find(searchClosedTag) + len(searchClosedTag)]
+		result.append(findedTag)
+	return result
 
+def removeCompositeTagsWithName(tagName, content):
+	findedTags = findCompositeTagsWithName(tagName, content)
+	preparedContent = content
+	for index, item in enumerate(findedTags):
+		preparedContent = preparedContent.replace(item, '')
+	return preparedContent
+
+def optimiseHtmlPartOf(content):
+	links = findSimpleTagsWithName('link', content)
+	preparedContent = removeSimpleTagsWithName('link', content)
+	styles = findCompositeTagsWithName('style', preparedContent)
+	preparedContent = removeCompositeTagsWithName('style', preparedContent)
+	connectScripts = findSimpleTagsWithName('script', preparedContent, True)
+	preparedContent = removeSimpleTagsWithName('script', preparedContent, True)
+	innerScripts = findCompositeTagsWithName('script', preparedContent)
+	preparedContent = removeCompositeTagsWithName('script', preparedContent)
+	return { 'content': preparedContent, 'styles': getAttrsFromTags(links + styles), 'scripts': getAttrsFromTags(connectScripts + innerScripts) }
 
 def optimiseHtmlDict(htmldict):
-	head = optimiseHtmlHeadPart(htmldict['head'])
-	body = optimiseHtmlBodyPart(htmldict['body'])
+	head = optimiseHtmlPartOf(htmldict['head'])
+	body = optimiseHtmlPartOf(htmldict['body'])
 	return { 'head': head, 'body': body }
 
 def optimiseHtmlsDict(htmlsdict):
