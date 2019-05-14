@@ -3,13 +3,34 @@
 import re, sys, os, json, copy, zlib, string, random, math, shutil, htmlmin, cssmin, jsmin, argparse
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 __license__ = "MIT"
 
 compressors = {
 	'style': cssmin.cssmin,
 	'script': jsmin.jsmin
 }
+
+def selectCommonParts(dictContent):
+	return saveTo(dictContent)
+
+def simplifyPaths(dictContent):
+	offset = 0
+	keySplitted = [item.split('/') for item in dictContent]
+	for key in keySplitted:
+		matched = True
+		for subkey in keySplitted:
+			matched = matched and key[offset] == subkey[offset]
+		if matched and offset < len(key) + 1:
+			offset = offset + 1
+	preparedKeys = ['/'.join(key[offset:]) for key in keySplitted]
+	result = { newKey: dictContent['/'.join(keySplitted[index])] for index, newKey in enumerate(preparedKeys)}
+	return result
+
+def simplifyDict(dictContent):
+	withSimplifiedPaths = simplifyPaths(dictContent)
+	withCommonPart = selectCommonParts(withSimplifiedPaths)
+	return saveTo(withCommonPart)
 
 def getAttrsFromTag(tagcontent):
 	startTag = tagcontent[:tagcontent.find('>') + 1]
@@ -88,7 +109,7 @@ def prepareHTMLsDict(htmlsDict):
 def optimiseHtmlsDict(htmlsdict):
 	return {item: optimiseHtmlDict(htmlsdict[item]) for item in htmlsdict}
 
-def saveTo(jsonData, filename='out.txt'):
+def saveTo(jsonData, filename='log.txt'):
 	file = open(filename, 'w+')
 	file.seek(0)
 	file.write(json.dumps(jsonData))
@@ -110,7 +131,7 @@ def makeHTMLParsing(htmlFilepaths):
 
 def saveData(data, singlefile):
 	if singlefile:
-		return saveTo(data, singlefile)
+		return saveTo(simplifyDict(data), singlefile)
 	for item in data:
 		filename = item[item.rfind('/') + 1:item.rfind('.') + 1] + 'json'
 		saveTo(data[item], filename)
