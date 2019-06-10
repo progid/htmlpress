@@ -38,12 +38,14 @@ def getAttrsFromTag(tagcontent):
 	tagContent = tagcontent[len(startTag):-len(endTag)] if endTag else ''
 	tagName = startTag[1:startTag.find(' ')]
 	tagAttrsArr = startTag[startTag.find(' ') + 1:-1].split(' ') if startTag.find(' ') != -1 else []
-	tagAttrsKeyValueArr = [{ attrs[:attrs.find('=')]: attrs[attrs.find('=')+1:] } for attrs in tagAttrsArr]
+	# tagAttrsKeyValueArr = [{ attrs[:attrs.find('=')]: attrs[attrs.find('=')+1:] } for attrs in tagAttrsArr]
+	tagAttrsKeyValue = { attrs[:attrs.find('=')]: attrs[attrs.find('=')+1:]  for attrs in tagAttrsArr }
 	result = {
 		'tag': tagName
 	}
-	if tagAttrsKeyValueArr:
-		result['attrs'] = tagAttrsKeyValueArr
+	if tagAttrsKeyValue:
+		# result['attrs'] = tagAttrsKeyValueArr
+		result['attrs'] = tagAttrsKeyValue
 	if tagContent:
 		result['content'] = compressors[tagName](tagContent)
 	return result
