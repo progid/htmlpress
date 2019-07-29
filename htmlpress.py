@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import re, sys, os, json, copy, zlib, string, random, math, shutil, htmlmin, cssmin, jsmin, argparse
+import re, sys, os, json, copy, zlib, string, random, math, shutil, htmlmin, cssmin, jsmin, argparse, glob
 
 __author__ = "Igor Terletskiy"
 __version__ = "0.1.5"
@@ -122,8 +122,19 @@ def saveTo(jsonData, filename='log.txt'):
 def readFile(filepath):
 	return open(filepath, 'r').read()
 
+def spreadFolders(filepaths):
+	result = []
+	for filepath in filepaths:
+		if(os.path.isdir(filepath)):
+			result.extend([f for f in glob.glob(filepath + "/**/*.html", recursive=True)])
+		else:
+			result.append(filepath)
+	return result
+
+
 def readFiles(filepaths):
-	return { filepath: readFile(filepath) for filepath in filepaths }
+	preparedFilepaths = spreadFolders(filepaths)
+	return { filepath: readFile(filepath) for filepath in preparedFilepaths }
 
 def makeHTMLParsing(htmlFilepaths):
 	htmlsDict = readFiles(htmlFilepaths)
