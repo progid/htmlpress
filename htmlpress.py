@@ -146,7 +146,7 @@ def saveData(data, singlefile):
 	if singlefile:
 		return saveTo(simplifyDict(data), singlefile)
 	for item in data:
-		filename = item[item.rfind('/') + 1:item.rfind('.') + 1] + 'json'
+		filename = item.replace('.html', '.json')
 		saveTo(data[item], filename)
 	return data
 
