@@ -111,6 +111,12 @@ def prepareHTMLsDict(htmlsDict):
 def optimiseHtmlsDict(htmlsdict):
 	return {item: optimiseHtmlDict(htmlsdict[item]) for item in htmlsdict}
 
+def makeIsolate(filepath, filedict):
+	print('makeIsolate')
+
+def letsEmbedDepsIn(filepath, filedict):
+	print('letsEmbedDepsIn')
+
 def saveTo(jsonData, filename='log.txt'):
 	file = open(filename, 'w+')
 	file.seek(0)
@@ -154,12 +160,19 @@ def getArgsData():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--input', nargs='+', help='input help')
 	parser.add_argument('--singlefile', nargs='?', help='singlefile help')
+	parser.add_argument('--built-in', action='store_true', help='built-in help')
+	parser.add_argument('--isolate', action='store_true', help='isolate help')
 	return parser.parse_args()
 
 def main():
 	args = getArgsData()
 	preparedData = makeHTMLParsing(args.input)
-	saveData(preparedData, args.singlefile)
+	if args.built_in:
+		letsEmbedDepsIn('x',{})
+	if args.isolate:
+		makeIsolate('y', {})
+
+	# saveData(preparedData, args.singlefile)
 
 if __name__ == "__main__":
 	main()
