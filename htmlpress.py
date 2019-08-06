@@ -137,7 +137,6 @@ def spreadFolders(filepaths):
 			result.append(filepath)
 	return result
 
-
 def readFiles(filepaths):
 	preparedFilepaths = spreadFolders(filepaths)
 	return { filepath: readFile(filepath) for filepath in preparedFilepaths }
