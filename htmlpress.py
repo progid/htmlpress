@@ -171,7 +171,7 @@ def main():
 	if args.isolate:
 		makeIsolate('y', {})
 
-	# saveData(preparedData, args.singlefile)
+	saveData(preparedData, args.singlefile)
 
 if __name__ == "__main__":
 	main()
