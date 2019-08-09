@@ -3,13 +3,35 @@
 import re, sys, os, json, copy, zlib, string, random, math, shutil, htmlmin, cssmin, jsmin, argparse, glob
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 __license__ = "MIT"
 
 compressors = {
 	'style': cssmin.cssmin,
 	'script': jsmin.jsmin
 }
+
+def getFileData(filepath):
+	file = open(filepath, 'r')
+	return file.read()
+
+def makeBundle(externalPath, jsonData):
+	resultJsonData = copy.deepcopy(jsonData)
+	list = (resultJsonData['head']['scripts'] +
+		resultJsonData['head']['styles'] +
+		resultJsonData['body']['scripts'] +
+		resultJsonData['body']['styles'])
+	for node in list:
+		tag = node['tag'] = 'style' if node['tag'] == 'link' else node['tag']
+		attrs = node['attrs'] if 'attrs' in node else {}
+		accessor = 'href' if 'href' in attrs else 'src' if 'src' in attrs else ''
+		if accessor and attrs[accessor]:
+			attrs[accessor] = externalPath + attrs[accessor]
+			node['content'] = compressors[tag](getFileData(attrs[accessor]))
+			del attrs[accessor]
+		if 'attrs' in node and not len(attrs):
+			del node['attrs']
+	return resultJsonData
 
 def selectCommonParts(dictContent):
 	return saveTo(dictContent)
@@ -147,12 +169,14 @@ def makeHTMLParsing(htmlFilepaths):
 	optimisedHtmlsDict = optimiseHtmlsDict(preparedHtmlsDict)
 	return optimisedHtmlsDict
 
-def saveData(data, singlefile):
+def saveData(data, singlefile, built_in=False):
 	if singlefile:
 		return saveTo(simplifyDict(data), singlefile)
 	for item in data:
 		filename = item.replace('.html', '.json')
-		saveTo(data[item], filename)
+		dirpath = item[:item.rfind('/') + 1]
+		bundledData = makeBundle(dirpath, data[item]) if built_in else data[item]
+		saveTo(bundledData, filename)
 	return data
 
 def getArgsData():
@@ -166,12 +190,10 @@ def getArgsData():
 def main():
 	args = getArgsData()
 	preparedData = makeHTMLParsing(args.input)
-	if args.built_in:
-		letsEmbedDepsIn('x',{})
 	if args.isolate:
 		makeIsolate('y', {})
 
-	saveData(preparedData, args.singlefile)
+	saveData(preparedData, args.singlefile, args.built_in)
 
 if __name__ == "__main__":
 	main()
