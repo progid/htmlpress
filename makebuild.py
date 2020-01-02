@@ -7,9 +7,7 @@ compressors = {
 	'style': cssmin.cssmin,
 }
 
-root = False
-
-def getCommonPathOf(paths):
+def removeCommonPartOfPaths(paths):
 	absolutePaths = []
 	minPathSize = 8192
 	offset = -1
@@ -22,21 +20,43 @@ def getCommonPathOf(paths):
 		temp = ''
 		for subpath in absolutePaths:
 			temp = subpath[i] if not temp else temp
-			if(temp != subpath[i]):
+			if temp != subpath[i]:
 				temp = ''
 				break
-		if(not temp):
+		if not temp:
 			break;
 		else:
 			offset = i + 1
 		temp = ''
-
 	return ['/'.join(path[offset:]) for path in absolutePaths]
+
+def getCommonPartOfPaths(paths):
+	absolutePaths = []
+	minPathSize = 8192
+	offset = -1
+	for path in paths:
+		temp = os.path.abspath(path)[1:].split('/')
+		absolutePaths.append(temp)
+		minPathSize = len(temp) if len(temp) < minPathSize else minPathSize
+
+	for i in range(minPathSize):
+		temp = ''
+		for subpath in absolutePaths:
+			temp = subpath[i] if not temp else temp
+			if temp != subpath[i]:
+				temp = ''
+				break
+		if not temp:
+			break;
+		else:
+			offset = i + 1
+		temp = ''
+	return '/'.join(absolutePaths[0][:offset])
+
 
 def makeBuild(targetPath, jsonData):
 	# print(os.path.abspath(targetPath))
-	# print(BUILDPATH)
-	if(not os.path.exists(targetPath)):
+	if not os.path.exists(targetPath):
 		os.mkdir(targetPath)
 		root = os.path.abspath(targetPath)
 		
@@ -45,9 +65,11 @@ def makeBuild(targetPath, jsonData):
 def getJsonFileData(filepath):
 	return json.loads(getFileData(filepath))
 
+
 def getFileData(filepath):
 	file = open(filepath, 'r')
 	return file.read()
+
 
 def main():
 	# chunkData = getJsonFileData('../router/example/water/code.json')
@@ -66,9 +88,14 @@ def main():
 	]
 	# bundledChunkData = makeBuild('../buil', {})
 	print('-------------------------------------------------')
-	print(getCommonPathOf(xdata))
+	print(getCommonPartOfPaths(xdata))
+	print('*************************************************')
+	print(removeCommonPartOfPaths(xdata))
+	print('*************************************************')
+	print(xdata)
 	print('-------------------------------------------------')
 	# print(bundledChunkData)
+
 
 if __name__ == "__main__":
 	main()
